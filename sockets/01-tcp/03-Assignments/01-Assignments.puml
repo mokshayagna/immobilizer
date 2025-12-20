@@ -1,0 +1,22 @@
+@startuml
+title One-Way Client → Server Communication (Single Sequence)
+
+participant Client
+participant Server
+
+Client -> Client: Start
+Client -> Client: Create Socket
+Client -> Client: Set Server Address
+
+Client -> Server: Connect
+Server -> Server: Accept Connection
+
+Client -> Server: Send Data
+Server -> Server: Receive Data
+Server -> Server: Print Data
+
+Client -> Client: Close Socket
+Server -> Server: Close Client Socket
+Server -> Server: Close Server Socket
+
+@enduml

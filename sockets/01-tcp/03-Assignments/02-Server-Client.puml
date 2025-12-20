@@ -1,0 +1,22 @@
+@startuml
+title Two Request–Response Cycles
+
+participant Client
+participant Server
+
+Client -> Client: socket()
+Client -> Server: connect()
+Server -> Server: accept()
+
+Client -> Server: send(Request 1)
+Server -> Server: process()
+Server -> Client: send(Response 1)
+
+Client -> Server: send(Request 2)
+Server -> Server: process()
+Server -> Client: send(Response 2)
+
+Client -> Client: close()
+Server -> Server: close()
+
+@enduml

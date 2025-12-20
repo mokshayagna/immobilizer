@@ -1,0 +1,29 @@
+@startuml
+title TCP Server – Normal Flow
+
+start
+
+:Start Server;
+
+:Create Socket;
+
+:Set Server Address\n(INADDR_ANY, PORT);
+
+:Bind Socket;
+
+:Listen for Connections;
+
+:Accept Client Connection;
+
+:Receive Data from Client;
+
+:Process Data\n(Convert to UPPERCASE);
+
+:Send Response to Client;
+
+:Close Client Socket;
+
+:Close Server Socket;
+
+stop
+@enduml

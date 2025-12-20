@@ -1,0 +1,23 @@
+@startuml
+title Client–Server Interaction (Loop Until END)
+
+participant Client
+participant Server
+
+Client -> Client: socket()
+Client -> Server: connect()
+Server -> Server: accept()
+
+loop Until Client sends "END"
+    Client -> Server: send(request)
+    Server -> Server: process(request)
+    Server -> Client: send(response)
+end
+
+Client -> Server: send("END")
+Server -> Server: exit loop
+
+Client -> Client: close()
+Server -> Server: close()
+
+@enduml

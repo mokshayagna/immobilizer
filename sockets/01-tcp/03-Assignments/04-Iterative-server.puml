@@ -1,0 +1,40 @@
+@startuml
+title Iterative Server – Multiple Clients (Sequential)
+
+participant Client1
+participant Client2
+participant Server
+
+Server -> Server: socket()
+Server -> Server: bind()
+Server -> Server: listen()
+
+loop Forever
+    Server -> Server: accept()
+
+    loop Until Client sends "END"
+        Client1 -> Server: send(request)
+        Server -> Server: process(request)
+        Server -> Client1: send(response)
+    end
+
+    Client1 -> Server: send("END")
+    Server -> Server: close client socket
+end
+
+== Next Client ==
+
+loop Forever
+    Server -> Server: accept()
+
+    loop Until Client sends "END"
+        Client2 -> Server: send(request)
+        Server -> Server: process(request)
+        Server -> Client2: send(response)
+    end
+
+    Client2 -> Server: send("END")
+    Server -> Server: close client socket
+end
+
+@enduml

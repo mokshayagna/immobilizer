@@ -1,0 +1,23 @@
+@startuml
+title TCP Client – Normal Flow
+
+start
+
+:Start Client;
+
+:Create Socket;
+
+:Set Server Address\n(IP, PORT);
+
+:Connect to Server;
+
+:Send Data\n"hello world";
+
+:Receive Server Response;
+
+:Display Response;
+
+:Close Socket;
+
+stop
+@enduml
