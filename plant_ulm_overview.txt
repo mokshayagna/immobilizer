@@ -1,0 +1,35 @@
+@startuml
+start
+
+:Key Inserted;
+:Transponder ECU Activated;
+
+' Step 1: Generate Challenge
+:TRNG generates Random Challenge (CH);
+
+:Send CH to Key Transponder Chip;
+
+' Step 2: Key-side AES
+:Key contains Secret AES-128 Key;
+:Key computes Response =
+AES_Encrypt(SecretKey, CH);
+
+:Send Response to Transponder ECU;
+
+' Step 3: ECU-side Verification
+:ECU computes Expected_Response =
+AES_Encrypt(SecretKey, CH);
+
+if (Response == Expected_Response?) then (YES)
+    :Authentication SUCCESS;
+    :Transponder ECU sends "Auth OK"
+    over CAN Bus to Engine ECU;
+    :Engine ECU enables Fuel + Ignition;
+    :ENGINE STARTS;
+else (NO)
+    :Authentication FAILED;
+    :Engine remains IMMOBILIZED;
+endif
+
+stop
+@enduml
