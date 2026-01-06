@@ -10,16 +10,16 @@ int main(){
     int retval;
     char recvBuff[1024];
     char sendBuff[1024]; 
-    char x[]= "OP=ADD";
-    char y[] = "A=10";
-    char z[]= "B=20";
-    sprintf(sendBuff, "%s;%s;%s;", x, y, z);
-
+    char x[]= "ADD";
+    char y[] = "10";
+    char z[]= "20";
+    sprintf(sendBuff, "OP=%s;A=%s;B=%s;", x, y, z);
+    printf("sendBuff:%s\n",sendBuff);
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(6001);
+    server_addr.sin_port = htons(5000);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
