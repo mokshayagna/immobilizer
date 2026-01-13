@@ -4,10 +4,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <ctype.h>
-int main(){
+int main()
+{
     int server_fd, client_fd;
     char recvBuffer[1024];
-    int retval;
+    char retval;
+
     /* 1. Create socket */
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -26,25 +28,9 @@ int main(){
 
     /* 5. Accept client */
     client_fd = accept(server_fd, NULL, NULL);
-
-    while(1){
-        retval = recv(client_fd, recvBuffer, sizeof(recvBuffer), 0);
-        if(retval <= 0)
-            break;
-        recvBuffer[retval] != '\0';
-        printf("Server received: %s\n", recvBuffer);
-        if (strcmp(recvBuffer, "END") == 0)
-        {
-            printf("END received. Closing connection.\n");
-            break;   
-        }
-        for(int i=0;recvBuffer[i] !='\0';i++){
-            recvBuffer[i] = toupper((unsigned char)recvBuffer[i]);  
-        }
-        send(client_fd, recvBuffer, retval, 0);
-
-    }
-    close(client_fd);
-    close(server_fd);
-    return 0;
-}
+        
+    /* 6. Receive data */
+    retval = recv(client_fd, recvBuffer, sizeof(recvBuffer), 0);
+    recvBuffer[retval] = '\0';
+    printf("Server received: %s\n", recvBuffer);
+    
