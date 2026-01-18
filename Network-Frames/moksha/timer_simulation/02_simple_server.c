@@ -18,7 +18,7 @@ int main()
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(5001);
+    server_addr.sin_port = htons(5000);
 
     /* 3. Bind */
     bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
@@ -31,20 +31,18 @@ int main()
     client_fd = accept(server_fd, NULL, NULL);
         
     /* 6. Receive data */
-    retval = recv(client_fd, recvBuffer, sizeof(recvBuffer), 0);
+    retval = recv(client_fd, recvBuffer, sizeof(recvBuffer), 0); // receive Hello
     recvBuffer[retval] = '\0';
-    printf("Server received: %s\n", recvBuffer); //HELLO
+    printf("Server received: %s\n", recvBuffer); //Hello
 
     retval = send(client_fd, sendBuffer, strlen(recvBuffer), 0); //hello
+    sleep(8);
+
 
     close(client_fd);
     close(server_fd);
 
     return 0;
 }
-
-
-
-
 
     
