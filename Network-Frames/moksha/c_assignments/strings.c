@@ -6,13 +6,13 @@ int main(){
     char str2[] = "World!";
     char a[50];
     // strcpy appends str2 to str1
-    /*
+    
     printf("%ld\n", strlen(str1)); 
     strcpy(str1+strlen(str1),str2);
     printf("After strcpy, str1: %s\n", str1);
-    */
 
 
+    
     // strcasecmp compares two strings ignoring case
     /*
     char str3[] = "HELLO, " ;
@@ -45,11 +45,7 @@ int main(){
     printf("%d\n", strcmp("abc", "abd"));
 */
 
-    //strcoll compares two strings using the current locale
-    /*
-    printf("%d\n", strcoll("abc", "abd"));
-    */
-
+    
     //strcpy copies str1 into a
     /*
     strcpy(a, str1);
