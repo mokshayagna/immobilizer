@@ -6,7 +6,9 @@
 #include <errno.h>
 #include <time.h>
 #include <stdint.h>
-void aes128_encrypt(uint8_t *pt,uint8_t *ct,uint8_t *key);
+#include "functions.h"
+
+//void aes128_encrypt(uint8_t *pt,uint8_t *ct,uint8_t *key);
 
 #define PER_CHALLENGE_TIMEOUT 5
 #define TOTAL_AUTH_TIMEOUT   15
@@ -17,16 +19,6 @@ uint8_t secret_key[16] = {
     0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,
     0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c
 };
-
-/* ===================== TRNG ===================== */
-void trng(uint8_t *rand, int len)
-{
-    FILE *fp = fopen("/dev/urandom", "rb");
-    if (!fp) return;
-    fread(rand, 1, len, fp);
-    fclose(fp);
-}
-
 /* ===================== UTILITY ===================== */
 void print_hex(const char *label, uint8_t *data, int len)
 {
