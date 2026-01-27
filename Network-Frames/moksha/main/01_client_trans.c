@@ -141,24 +141,7 @@ int main()
 
     /* 4. Send data */
     send(sockfd, sendBuff, strlen(sendBuff), 0);  //sent start to engine ECU
-
-    retval = recv(sockfd, recvBuffer, sizeof(recvBuffer), 0); // received random number from engine ECU
-    recvBuffer[retval] = '\0';
-    for(int i = 0; i < 16; i++)
-    {
-        printf("%02X ", recvBuffer[i]);  // print received random number
-    }
-    printf("\n");
-
-
-    aes128_encrypt(recvBuffer, value, secret_key);  // aes-128 called and stored in value
-    printf("Encrypted value in Transponder ECU: ");
-    for(int i = 0; i < 16; i++)
-    {
-        printf("%02X ", value[i]); // print encrypted random number
-    }
-
-    printf("\n");
+    
 
    int attempt = 0;
 
@@ -196,7 +179,7 @@ int main()
             printf("DEBUG: Quick response (<5 sec)\n");
             sleep(1);
         }
-
+        printf("Sending Encrypted Reply\n");
         send(sockfd, value, sizeof(value), 0);
     }
 
