@@ -1,13 +1,13 @@
 # ================= client-server interaction =================
-client_server_interaction:
-	gcc 02_server_engine.c 
+normal:
+	gcc 02_server_engine.c aes_128.c trng.c -o server
+	gcc 01_client_trans.c aes_128.c trng.c -o client
 
 # ================= iterative server =================
-iterative:
-	gcc IterativeServer-ultipleClients_S.c -o s
-	gcc IterativeServer–MultipleClients_C.c -o c
+function:
+	gcc 03_engine_ecu.c aes_128.c trng.c -o server
+	gcc 01_client_trans.c aes_128.c trng.c -o client
+# ================= clean =================
+clean:
+	rm -rf server client
 
-# ================= just =================
-just:
-	gcc just_s.c -o s
-	gcc just_c.c -o c
