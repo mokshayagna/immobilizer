@@ -84,7 +84,7 @@ int main()
 
         /* -------- Wait for Response (PER CHALLENGE) -------- */
         time_t challenge_start = time(NULL);
-
+        
         while (difftime(time(NULL), challenge_start) < PER_CHALLENGE_TIMEOUT) {
 
             retval = recv(client_fd, rec_value, sizeof(rec_value), MSG_DONTWAIT);

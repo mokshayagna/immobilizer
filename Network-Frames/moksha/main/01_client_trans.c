@@ -4,85 +4,108 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdint.h>
 #include "functions.h"
-#define Nb 4
-#define Nk 4
-#define Nr 10
 
+#define SERVER_PORT 5000
+
+/* ===================== SECRET KEY ===================== */
 uint8_t secret_key[16] = {
-        0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,
-        0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c
-    };
+    0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,
+    0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c
+};
 
-/* ===================== MAIN ===================== */
+/* ===================== FRAME FROM SERVER ===================== */
+typedef struct {
+    uint8_t challenge_counter;   // server-generated
+    uint8_t random_number[16];   // 16-byte random
+} ChallengeFrame;
 
-int main()
+typedef struct {
+    uint8_t challenge_counter;   // echoed by client
+    uint8_t encrypted[16];       // AES(random)
+} ResponseFrame;
+
+/* ===================== UTILITY ===================== */
+void print_hex(const char *label, uint8_t *data, int len)
 {
-    int sockfd = 0; 
-    int retval = 0;
-    char sendBuff[1024] = "start";
-    uint8_t recvBuffer[16];
-    uint8_t value[16];
+    printf("%s: ", label);
+    for (int i = 0; i < len; i++)
+        printf("%02X ", data[i]);
+    printf("\n");
+}
 
-    /* 1. Create socket */
+int main(void)
+{
+    int sockfd;
+    int retval;
+
+    ChallengeFrame frame;
+    uint8_t encrypted[16];
+
+    /* Client-side tracking */
+    uint8_t latest_counter_received = 0;
+    uint8_t counter_used_for_encryption = 0;
+
+    /* ===================== SOCKET SETUP ===================== */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    /* 2. Server address */
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(5000);
+    server_addr.sin_port = htons(SERVER_PORT);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    /* 3. Connect */
     connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
 
-    /* 4. Send data */
-    send(sockfd, sendBuff, strlen(sendBuff), 0);  //sent start to engine ECU
-    
+    /* Send START command */
+    send(sockfd, "start", 5, 0);
+    printf("Transponder ECU started\n");
 
-   int attempt = 0;
+    int attempt = 0;
 
+    /* ===================== MAIN LOOP ===================== */
     while (1) {
 
-        retval = recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+        /* Receive full challenge frame (17 bytes) */
+        retval = recv(sockfd, &frame, sizeof(ChallengeFrame), 0);
 
         if (retval <= 0) {
-            printf("Server closed connection or error\n");
+            printf("Server closed connection\n");
             break;
         }
 
         attempt++;
-        printf("\n--- Transponder Attempt %d ---\n", attempt);
+        printf("\n==============================\n");
+        printf(" TRANSPONDER ATTEMPT %d\n", attempt);
+        printf("==============================\n");
 
-        printf("Received Random Number: ");
-        for (int i = 0; i < retval; i++) {
-            printf("%02X ", recvBuffer[i]);
+        printf("Received Challenge Counter : %u\n", frame.challenge_counter);
+        print_hex("Received Random Number    ", frame.random_number, 16);
+
+        /* -------- Encrypt ONLY random -------- */
+        aes128_encrypt(frame.random_number, encrypted, secret_key);
+        print_hex("Encrypted", encrypted, 16);
+
+        /* Prepare response frame */
+        ResponseFrame rframe;
+        rframe.challenge_counter = frame.challenge_counter;
+        memcpy(rframe.encrypted, encrypted, 16);
+        printf("\n=== SENDING RESPONSE TO SERVER ===\n");
+        printf("Challenge Counter : %u\n", rframe.challenge_counter);
+        print_hex("Encrypted Random ", rframe.encrypted, 16);
+        
+        
+        /* Send response */
+        if(attempt == 1){
+            sleep(6);  // Simulate delay on first attempt
         }
-        printf("\n");
-
-        aes128_encrypt(recvBuffer, value, secret_key);
-
-        printf("Encrypted value in Transponder ECU: ");
-        for (int i = 0; i < 16; i++) {
-            printf("%02X ", value[i]);
+        else{
+            sleep(1);  // Normal delay for subsequent attempts
         }
-        printf("\n");
-
-        /* DEBUG DELAY */
-        if (attempt == 1) {
-            printf("DEBUG: First attempt → delaying response (>5 sec)\n");
-            sleep(6);
-        } else {
-            printf("DEBUG: Quick response (<5 sec)\n");
-            sleep(1);
-        }
-        printf("Sending Encrypted Reply\n");
-        send(sockfd, value, sizeof(value), 0);
+        send(sockfd, &rframe, sizeof(rframe), 0);
     }
+        
 
-
-    printf("Closing connection.\n");
     close(sockfd);
-
     return 0;
 }
