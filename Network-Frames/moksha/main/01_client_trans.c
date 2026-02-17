@@ -62,11 +62,8 @@ int main(void)
     printf("Transponder ECU started\n");
 
     int attempt = 0;
-
-    /* ===================== MAIN LOOP ===================== */
     while (1) {
 
-        /* Receive full challenge frame (17 bytes) */
         retval = recv(sockfd, &frame, sizeof(ChallengeFrame), 0);
 
         if (retval <= 0) {
@@ -82,29 +79,43 @@ int main(void)
         printf("Received Challenge Counter : %u\n", frame.challenge_counter);
         print_hex("Received Random Number    ", frame.random_number, 16);
 
-        /* -------- Encrypt ONLY random -------- */
+        /* Encrypt */
         aes128_encrypt(frame.random_number, encrypted, secret_key);
         print_hex("Encrypted", encrypted, 16);
 
-        /* Prepare response frame */
+        /* Prepare response */
         ResponseFrame rframe;
         rframe.challenge_counter = frame.challenge_counter;
         memcpy(rframe.encrypted, encrypted, 16);
-        printf("\n=== SENDING RESPONSE TO SERVER ===\n");
+
+        printf("\n=== RESPONSE READY ===\n");
         printf("Challenge Counter : %u\n", rframe.challenge_counter);
         print_hex("Encrypted Random ", rframe.encrypted, 16);
-        
-        
-        /* Send response */
-        if(attempt == 1){
-            sleep(6);  // Simulate delay on first attempt
+
+        /* ---------------- NON-BLOCKING DELAY ---------------- */
+
+        int delay;
+        if (attempt == 1)
+            delay = 6;   // simulate long delay
+        else
+            delay = 1;   // normal delay
+
+        time_t start_time = time(NULL);
+
+        while (1) {
+            time_t now = time(NULL);
+
+            if (now - start_time >= delay) {
+                send(sockfd, &rframe, sizeof(rframe), 0);
+
+                printf("\n=== RESPONSE SENT AFTER %d sec ===\n", delay);
+                break;
+            }
+
+            /* Small sleep to avoid CPU spinning */
+            usleep(10000);   // 10 ms
         }
-        else{
-            sleep(1);  // Normal delay for subsequent attempts
-        }
-        send(sockfd, &rframe, sizeof(rframe), 0);
     }
-        
 
     close(sockfd);
     return 0;

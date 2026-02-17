@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <ctype.h>
 #include <errno.h>
-#include<time.h>
+#include <time.h>
 #include "functions.h"
 #define Nb 4
 #define Nk 4

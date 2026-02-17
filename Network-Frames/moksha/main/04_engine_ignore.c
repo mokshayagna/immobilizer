@@ -117,25 +117,22 @@ int wait_and_verify_response(int client_fd,uint8_t expected_counter,uint8_t *exp
         retval = recv(client_fd, &response,sizeof(ResponseFrame), MSG_DONTWAIT);
 
         if (retval == sizeof(ResponseFrame)) {
+            if(response.challenge_counter != expected_counter){
+                usleep(100000);
+                continue;
+            }
 
             printf("\n=== CLIENT RESPONSE RECEIVED ===\n");
             printf("Response Counter : %u\n", response.challenge_counter);
             print_hex("Client Response  ", response.encrypted, 16);
-
-            /* 🔹 ADDED: counter validation */
-        
-            if (response.challenge_counter != expected_counter) {
-                printf("❌ OLD / STALE RESPONSE → IGNORED\n");
-                continue;
-            }
-            
-            print_hex("Expected AES     ", expected_aes, 16);
+            print_hex("Expected AES     ",expected_aes, 16);
 
             if (memcmp(response.encrypted, expected_aes, 16) == 0) {
                 printf("\n✅ AUTHENTICATION SUCCESS\n");
                 return 1;
             } else {
                 printf("❌ AES MISMATCH\n");
+                return 0;
             }
         }
 
