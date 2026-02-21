@@ -11,7 +11,7 @@
 /* ===================== DEFINES ===================== */
 #define PER_CHALLENGE_TIMEOUT 5
 #define TOTAL_AUTH_TIMEOUT   15
-#define SERVER_PORT          5000
+#define SERVER_PORT          5001
 #define POST_RELEASE_TIMEOUT 6
 
 #define ENGINE_OFF 0
@@ -37,7 +37,7 @@ typedef struct {
 /* ===================== GLOBAL STATE ===================== */
 int engine_state = ENGINE_OFF;
 int auth_valid = 0;
-time_t last_auth_time = 0;
+time_t last_engine_off_time = 0;
 
 /* ===================== UTILITY ===================== */
 void print_hex(const char *label, uint8_t *data, int len)
@@ -74,10 +74,8 @@ int wait_for_client(int server_fd)
     return client_fd;
 }
 
-/* ===================== AUTH FUNCTIONS ===================== */
-int wait_and_verify_response(int client_fd,
-                             uint8_t expected_counter,
-                             uint8_t *expected_aes)
+/* ===================== AUTH ===================== */
+int wait_and_verify_response(int client_fd,uint8_t expected_counter,uint8_t *expected_aes)
 {
     ResponseFrame response;
     time_t start = time(NULL);
@@ -90,6 +88,7 @@ int wait_and_verify_response(int client_fd,
         ret = recv(client_fd, &response, sizeof(response), MSG_DONTWAIT);
 
         if (ret == sizeof(response)) {
+
             print_hex("Client AES", response.encrypted, 16);
             print_hex("Expected AES", expected_aes, 16);
 
@@ -132,7 +131,7 @@ int perform_authentication(int client_fd)
         print_hex("Generated Random", frame.random_number, 16);
 
         send(client_fd, &frame, sizeof(frame), 0);
-        printf("[DEBUG] Challenge sent to transponder\n");
+        printf("[DEBUG] Challenge sent\n");
 
         aes128_encrypt(frame.random_number, encrypted, secret_key);
         print_hex("Engine AES", encrypted, 16);
@@ -154,11 +153,16 @@ int check_post_release(void)
         return 0;
     }
 
-    double diff = difftime(time(NULL), last_auth_time);
-    printf("[DEBUG] Time since last auth: %.0f sec\n", diff);
+    if (last_engine_off_time == 0) {
+        printf("[DEBUG] No ENGINE OFF recorded\n");
+        return 0;
+    }
+
+    double diff = difftime(time(NULL), last_engine_off_time);
+    printf("[DEBUG] Time since ENGINE OFF: %.0f sec\n", diff);
 
     if (diff <= POST_RELEASE_TIMEOUT) {
-        printf("[INFO] Post-release VALID → skipping authentication\n");
+        printf("[INFO] Post-release VALID → Skip auth\n");
         return 1;
     }
 
@@ -179,44 +183,51 @@ int main(void)
     while (1) {
 
         memset(recvBuffer, 0, sizeof(recvBuffer));
-        recv(client_fd, recvBuffer, sizeof(recvBuffer)-1, 0);
+        int r = recv(client_fd, recvBuffer, sizeof(recvBuffer)-1, 0);
 
-        printf("\n[INFO] Command received: %s\n", recvBuffer);
-
-        if (strcmp(recvBuffer, "start") != 0) {
-            printf("[WARN] Invalid command → ignored\n");
-            continue;
+        if (r <= 0) {
+            printf("[ERROR] Client disconnected\n");
+            break;
         }
+
+        printf("\n[INFO] Command: %s\n", recvBuffer);
+
+        if (strcmp(recvBuffer, "start") != 0)
+            continue;
 
         if (engine_state == ENGINE_ON) {
-            printf("[WARN] Engine already ON → ignored\n");
+            printf("[WARN] Engine already ON\n");
             continue;
         }
 
-        printf("[INFO] START request accepted\n");
+        printf("[INFO] START accepted\n");
 
-        /* ---- POST RELEASE ---- */
         if (check_post_release()) {
-            printf("[ENGINE] ON (Post-release)\n");
             engine_state = ENGINE_ON;
+            printf("[ENGINE] ON (Post-release)\n");
 
-            printf("[ENGINE] OFF (Simulated)\n");
+            sleep(2);
+
             engine_state = ENGINE_OFF;
+            last_engine_off_time = time(NULL);
+            printf("[ENGINE] OFF\n");
             continue;
         }
 
-        /* ---- AUTHENTICATION ---- */
         if (perform_authentication(client_fd)) {
+            engine_state = ENGINE_ON;
+            auth_valid = 1;
+
             printf("[ENGINE] ON (Authenticated)\n");
 
-            auth_valid = 1;
-            last_auth_time = time(NULL);
+            sleep(2);
 
-            printf("[ENGINE] OFF (Simulated)\n");
             engine_state = ENGINE_OFF;
+            last_engine_off_time = time(NULL);
+            printf("[ENGINE] OFF\n");
         }
         else {
-            printf("[ENGINE] OFF (Authentication Failed)\n");
+            printf("[ENGINE] OFF (Auth Failed)\n");
         }
     }
 
